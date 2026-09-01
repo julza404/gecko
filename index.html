@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>Gecko</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="rail">
+        <a class="brand" href="#today" data-view-link="today" aria-label="Gecko today">
+          <span class="brand-mark">G</span>
+          <span><strong>GECKO</strong><small>WORK AGENT</small></span>
+        </a>
+
+        <div class="agent-status"><span></span><strong>LOCAL AGENT</strong><small id="agentStamp">Connecting</small></div>
+
+        <nav class="primary-nav" aria-label="Gecko views">
+          <button class="active" data-view="today"><span class="nav-icon">◎</span>Today <b id="todayCount">0</b></button>
+          <button data-view="calendar"><span class="nav-icon">▦</span>Calendar</button>
+          <button data-view="backlog"><span class="nav-icon">≡</span>Backlog <b id="backlogCount">0</b></button>
+          <button data-view="email"><span class="nav-icon">@</span>Email action</button>
+          <button data-view="reset"><span class="nav-icon">↗</span>Weekly reset</button>
+          <button data-view="archive"><span class="nav-icon">□</span>Archive</button>
+        </nav>
+
+        <div class="rail-key">
+          <p>BUCKET SIGNAL</p>
+          <span class="key strategic">Strategic</span>
+          <span class="key hands-on">Hands-on</span>
+          <span class="key admin">Admin</span>
+          <span class="key afk">AFK</span>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <span class="kicker" id="viewKicker">TODAY / LIVE PLAN</span>
+            <strong id="currentDate">Loading</strong>
+          </div>
+          <div class="top-actions">
+            <span class="sync-state" id="syncState"><i></i>SYNCING</span>
+            <button class="icon-button" id="refreshButton" title="Refresh Gecko" aria-label="Refresh Gecko">↻</button>
+          </div>
+        </header>
+        <div id="app" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+  </body>
+</html>
