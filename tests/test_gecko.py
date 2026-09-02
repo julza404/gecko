@@ -52,8 +52,8 @@ class GeckoStoreTests(unittest.TestCase):
 
         self.store.delete_task(task["id"])
         dashboard = self.store.dashboard()
-        self.assertEqual(1, len(dashboard["tasks"]))
-        self.assertTrue(dashboard["tasks"][0]["done"])
+        self.assertEqual([], dashboard["tasks"])
+        self.assertEqual(["Write decision memo"], [task["title"] for task in dashboard["archivedTasks"]])
         persisted = json.loads((self.root / "data" / "gecko.json").read_text())
         self.assertTrue(persisted["tasks"][0]["done"])
         self.assertIn("archivedAt", persisted["tasks"][0])

@@ -354,6 +354,7 @@ main { min-width: 0; padding: 0 clamp(24px, 3.6vw, 72px) 70px; }
 .calendar-legend span:before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 5px; background: currentColor; }
 
 .table-list { background: #fff; border-top: 2px solid var(--ink); }
+.archive-history { margin-top: 36px; }
 .table-row { min-height: 72px; display: grid; grid-template-columns: minmax(0, 1fr) 130px 100px; align-items: center; gap: 15px; padding: 11px 14px; border-bottom: 1px solid var(--line); }
 .table-row strong { overflow-wrap: anywhere; }
 .table-row small { display: block; margin-top: 4px; color: var(--muted); font: 500 10px "SFMono-Regular", Consolas, monospace; }

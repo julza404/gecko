@@ -365,16 +365,28 @@ function renderReset() {
 }
 
 function renderArchive() {
+  const archived = dashboard.archivedTasks || [];
   return `
-    <section class="view-header"><div><h1>Archive</h1><p>Only days Gecko has actually recorded appear here.</p></div></section>
+    <section class="view-header"><div><h1>Archive</h1><p>Completed actions are retained here after they leave today’s plan.</p></div></section>
     <div class="table-list">
+      ${archived.length ? archived.map(task => `
+        <div class="table-row">
+          <div><strong>${escapeHtml(task.title)}</strong><small>Completed ${escapeHtml(formatDate(task.scheduledDate))} · ${escapeHtml(sourceLine(task))}</small></div>
+          <span class="tag ${task.type}">${escapeHtml(typeLabels[task.type])}</span>
+          <span>Completed</span>
+        </div>`).join("") : `<div class="empty-state">No completed actions have been archived.</div>`}
+    </div>
+    <section class="archive-history">
+      <div class="section-heading"><h2>Daily record</h2><span>REAL HISTORY</span></div>
+      <div class="table-list">
       ${dashboard.history.length ? [...dashboard.history].reverse().map(day => `
         <div class="table-row">
           <div><strong>${escapeHtml(formatDate(day.date))}</strong><small>${day.closed ? "Day closed" : "Current day"} · ${day.afkMinutes}m AFK</small></div>
           <span class="tag ${day.frogDone ? "strategic" : "admin"}">${day.frogDone ? "Frog done" : "Frog open"}</span>
           <span>${day.completed} done / ${day.pending} open</span>
         </div>`).join("") : `<div class="empty-state">History starts today.</div>`}
-    </div>`;
+      </div>
+    </section>`;
 }
 
 function render() {
@@ -459,6 +471,9 @@ app.addEventListener("click", async event => {
   const row = action.closest("[data-task-id]");
   if (action.dataset.action === "archive-task" && row) {
     await mutate(`/api/tasks/${row.dataset.taskId}`, "DELETE", undefined, "Action archived as completed.");
+    currentView = "archive";
+    history.replaceState(null, "", "#archive");
+    render();
   }
   if (action.dataset.action === "set-frog" && row) {
     await mutate("/api/frog", "POST", { taskId: row.dataset.taskId }, "Today’s frog updated.");

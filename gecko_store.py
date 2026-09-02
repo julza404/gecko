@@ -78,6 +78,7 @@ def new_day(target: date) -> dict[str, Any]:
         "date": target.isoformat(),
         "frogTaskId": None,
         "frogDone": False,
+        "completedFrogTaskId": None,
         "taskIds": [],
         "calendarEvents": [],
         "afkIntervals": [],
@@ -312,6 +313,7 @@ class GeckoStore:
                 day = state["days"][state["activeDate"]]
                 if day.get("frogTaskId") == task_id:
                     day["frogDone"] = task["done"]
+                    day["completedFrogTaskId"] = task_id if task["done"] else None
             if "estimateMinutes" in changes:
                 task["estimateMinutes"] = min(480, max(5, int(changes["estimateMinutes"])))
             if "priority" in changes:
@@ -333,7 +335,9 @@ class GeckoStore:
             task["archivedAt"] = iso_local(self.now_provider())
             day = state["days"][task["scheduledDate"]]
             if day.get("frogTaskId") == task_id:
-                day["frogDone"] = True
+                day["completedFrogTaskId"] = task_id
+                day["frogTaskId"] = self._choose_frog_id(state, day["date"])
+                day["frogDone"] = False
             return deepcopy(task)
 
         state, task = self.mutate(operation)
@@ -366,6 +370,7 @@ class GeckoStore:
             task["done"] = not bool(task.get("done"))
             task["completedAt"] = iso_local(self.now_provider()) if task["done"] else None
             day["frogDone"] = task["done"]
+            day["completedFrogTaskId"] = task_id if task["done"] else None
             return deepcopy(task)
 
         state, task = self.mutate(operation)
@@ -445,11 +450,12 @@ class GeckoStore:
         state = self.read(target)
         target_key = target.isoformat()
         day = state["days"][target_key]
-        tasks = [
+        day_tasks = [
             deepcopy(task)
             for task in state["tasks"]
             if task.get("scheduledDate") == target_key
         ]
+        tasks = [task for task in day_tasks if not task.get("archivedAt")]
         tasks.sort(
             key=lambda task: (
                 task.get("done", False),
@@ -462,7 +468,7 @@ class GeckoStore:
         frog = task_lookup.get(day.get("frogTaskId"))
         metrics = {}
         for task_type in TASK_TYPES:
-            matching = [task for task in tasks if task["type"] == task_type]
+            matching = [task for task in day_tasks if task["type"] == task_type]
             metrics[task_type] = {
                 "completed": sum(bool(task.get("done")) for task in matching),
                 "pending": sum(not bool(task.get("done")) for task in matching),
@@ -494,6 +500,15 @@ class GeckoStore:
             "date": target_key,
             "settings": settings,
             "tasks": tasks,
+            "archivedTasks": sorted(
+                (
+                    deepcopy(task)
+                    for task in state["tasks"]
+                    if task.get("archivedAt")
+                ),
+                key=lambda task: task["archivedAt"],
+                reverse=True,
+            ),
             "frog": frog,
             "frogDone": bool(day.get("frogDone")),
             "metrics": metrics,
@@ -739,7 +754,9 @@ class GeckoStore:
             history.append(
                 {
                     "date": key,
-                    "frogDone": bool(day.get("frogDone")),
+                    "frogDone": bool(
+                        day.get("completedFrogTaskId") or day.get("frogDone")
+                    ),
                     "completed": summary["completed"],
                     "pending": summary["pending"],
                     "afkMinutes": summary["afkMinutes"],
@@ -761,7 +778,10 @@ class GeckoStore:
         unplanned_completed = sum(summary["unplannedCompleted"] for summary in summaries)
         afk_minutes = sum(summary["afkMinutes"] for summary in summaries)
         frog_days = sum(bool(day.get("frogTaskId")) for day in days)
-        frogs_completed = sum(bool(day.get("frogDone")) for day in days)
+        frogs_completed = sum(
+            bool(day.get("completedFrogTaskId") or day.get("frogDone"))
+            for day in days
+        )
         if not days:
             signal = "No workdays have been recorded yet."
         elif planned_completed + unplanned_completed == 0:
@@ -786,7 +806,9 @@ class GeckoStore:
         active = state["activeDate"]
         day = state["days"][active]
         tasks = [
-            task for task in state.get("tasks", []) if task.get("scheduledDate") == active
+            task
+            for task in state.get("tasks", [])
+            if task.get("scheduledDate") == active and not task.get("archivedAt")
         ]
         frog = next(
             (task for task in tasks if task["id"] == day.get("frogTaskId")),
@@ -835,9 +857,11 @@ class GeckoStore:
         ids = set(day.get("taskIds", []))
         tasks = [task for task in state.get("tasks", []) if task.get("id") in ids]
         lines = [f"# Gecko Day: {day_key}", "", "## Frog"]
-        frog = next((task for task in tasks if task["id"] == day.get("frogTaskId")), None)
+        frog_id = day.get("completedFrogTaskId") or day.get("frogTaskId")
+        frog = next((task for task in tasks if task["id"] == frog_id), None)
         lines.append(
-            f"- [{'x' if day.get('frogDone') else ' '}] {frog['title'] if frog else 'No frog selected'}"
+            f"- [{'x' if day.get('completedFrogTaskId') or day.get('frogDone') else ' '}] "
+            f"{frog['title'] if frog else 'No frog selected'}"
         )
         lines.extend(["", "## Action Items"])
         for task in tasks:
