@@ -150,13 +150,13 @@ class GeckoHandler(SimpleHTTPRequestHandler):
         try:
             if not parsed.path.startswith("/api/tasks/"):
                 return self.reply_json({"error": "Unknown action"}, HTTPStatus.NOT_FOUND)
-            store.delete_task(parsed.path.rsplit("/", 1)[-1])
+            store.archive_task(parsed.path.rsplit("/", 1)[-1])
             self.reply_json(store.dashboard())
         except KeyError:
             self.reply_json({"error": "Task not found"}, HTTPStatus.NOT_FOUND)
         except Exception as error:
             print(f"DELETE {parsed.path} failed: {error!r}")
-            self.reply_json({"error": "Gecko could not delete that task"}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            self.reply_json({"error": "Gecko could not archive that task"}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 def run(host: str = "127.0.0.1", port: int = 4173) -> None:

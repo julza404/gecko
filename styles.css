@@ -281,7 +281,7 @@ main { min-width: 0; padding: 0 clamp(24px, 3.6vw, 72px) 70px; }
   font-size: 18px;
 }
 .row-button:hover { color: var(--blue); background: #e5f3ff; border-color: #bad9f4; }
-.row-button.delete:hover { color: #a92818; background: #ffe9e4; border-color: #f4b8ac; }
+.row-button.archive:hover { color: #304800; background: var(--lime); border-color: #9fbd11; }
 .row-button.frog-choice.selected { color: #304800; background: var(--lime); border-color: #9fbd11; }
 .capture-form { display: grid; grid-template-columns: minmax(170px, 1fr) 112px 82px 42px; gap: 8px; margin-top: 16px; }
 .field, .capture-form input, .capture-form select {

@@ -150,7 +150,7 @@ function taskRows(tasks) {
         ${taskTypeOptions(task.type)}
       </select>
       <button class="row-button frog-choice ${dashboard.frog?.id === task.id ? "selected" : ""}" data-action="set-frog" title="Make this the frog" aria-label="Make this the frog">◎</button>
-      <button class="row-button delete" data-action="delete-task" title="Delete task" aria-label="Delete ${escapeHtml(task.title)}">×</button>
+      <button class="row-button archive" data-action="archive-task" title="Archive as completed" aria-label="Archive ${escapeHtml(task.title)} as completed">✓</button>
     </li>
   `).join("");
 }
@@ -457,8 +457,8 @@ app.addEventListener("click", async event => {
   const action = event.target.closest("[data-action]");
   if (!action) return;
   const row = action.closest("[data-task-id]");
-  if (action.dataset.action === "delete-task" && row) {
-    await mutate(`/api/tasks/${row.dataset.taskId}`, "DELETE", undefined, "Action deleted.");
+  if (action.dataset.action === "archive-task" && row) {
+    await mutate(`/api/tasks/${row.dataset.taskId}`, "DELETE", undefined, "Action archived as completed.");
   }
   if (action.dataset.action === "set-frog" && row) {
     await mutate("/api/frog", "POST", { taskId: row.dataset.taskId }, "Today’s frog updated.");

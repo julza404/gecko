@@ -320,20 +320,29 @@ class GeckoStore:
                 task["priority"] = changes["priority"]
             return deepcopy(task)
 
-        _, task = self.mutate(operation)
+        state, task = self.mutate(operation)
+        if task.get("done"):
+            self._write_archive_markdown(state, task["scheduledDate"])
         return task
 
-    def delete_task(self, task_id: str) -> None:
-        def operation(state: dict[str, Any]) -> None:
-            self._task_or_raise(state, task_id)
-            state["tasks"] = [task for task in state["tasks"] if task["id"] != task_id]
-            for day in state["days"].values():
-                day["taskIds"] = [item for item in day.get("taskIds", []) if item != task_id]
-                if day.get("frogTaskId") == task_id:
-                    day["frogTaskId"] = self._choose_frog_id(state, day["date"])
-                    day["frogDone"] = False
+    def archive_task(self, task_id: str) -> dict[str, Any]:
+        def operation(state: dict[str, Any]) -> dict[str, Any]:
+            task = self._task_or_raise(state, task_id)
+            task["done"] = True
+            task["completedAt"] = iso_local(self.now_provider())
+            task["archivedAt"] = iso_local(self.now_provider())
+            day = state["days"][task["scheduledDate"]]
+            if day.get("frogTaskId") == task_id:
+                day["frogDone"] = True
+            return deepcopy(task)
 
-        self.mutate(operation)
+        state, task = self.mutate(operation)
+        self._write_archive_markdown(state, task["scheduledDate"])
+        return task
+
+    def delete_task(self, task_id: str) -> dict[str, Any]:
+        """Backward-compatible alias for the former destructive delete action."""
+        return self.archive_task(task_id)
 
     def set_frog(self, task_id: str | None) -> None:
         def operation(state: dict[str, Any]) -> None:
@@ -348,7 +357,7 @@ class GeckoStore:
         self.mutate(operation)
 
     def toggle_frog(self) -> None:
-        def operation(state: dict[str, Any]) -> None:
+        def operation(state: dict[str, Any]) -> dict[str, Any]:
             day = state["days"][state["activeDate"]]
             task_id = day.get("frogTaskId")
             if not task_id:
@@ -357,8 +366,11 @@ class GeckoStore:
             task["done"] = not bool(task.get("done"))
             task["completedAt"] = iso_local(self.now_provider()) if task["done"] else None
             day["frogDone"] = task["done"]
+            return deepcopy(task)
 
-        self.mutate(operation)
+        state, task = self.mutate(operation)
+        if task.get("done"):
+            self._write_archive_markdown(state, task["scheduledDate"])
 
     def import_email(
         self,

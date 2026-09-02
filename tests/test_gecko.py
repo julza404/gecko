@@ -37,7 +37,7 @@ class GeckoStoreTests(unittest.TestCase):
         self.assertIsNone(dashboard["frog"])
         self.assertEqual(1, len(dashboard["history"]))
 
-    def test_task_changes_and_delete_persist_to_json_and_markdown(self) -> None:
+    def test_task_changes_and_archiving_persist_to_json_and_markdown(self) -> None:
         task = self.store.add_task("Write decision memo", "strategic", 60)
         self.store.update_task(task["id"], {"type": "hands-on", "done": True})
         dashboard = self.store.dashboard()
@@ -45,11 +45,18 @@ class GeckoStoreTests(unittest.TestCase):
         self.assertEqual("hands-on", saved["type"])
         self.assertTrue(saved["done"])
         self.assertIn("Write decision memo | hands-on", (self.root / "data" / "today.md").read_text())
+        self.assertIn(
+            "- [x] Write decision memo",
+            (self.root / "data" / "archive" / "2026-09-01.md").read_text(),
+        )
 
         self.store.delete_task(task["id"])
-        self.assertEqual([], self.store.dashboard()["tasks"])
+        dashboard = self.store.dashboard()
+        self.assertEqual(1, len(dashboard["tasks"]))
+        self.assertTrue(dashboard["tasks"][0]["done"])
         persisted = json.loads((self.root / "data" / "gecko.json").read_text())
-        self.assertEqual([], persisted["tasks"])
+        self.assertTrue(persisted["tasks"][0]["done"])
+        self.assertIn("archivedAt", persisted["tasks"][0])
 
     def test_rollover_archives_day_and_carries_only_open_tasks(self) -> None:
         open_task = self.store.add_task("Open work", "strategic", 45)
